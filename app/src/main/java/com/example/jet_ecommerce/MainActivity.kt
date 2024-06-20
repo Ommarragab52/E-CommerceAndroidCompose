@@ -36,7 +36,7 @@ fun ECommerce() {
                 verticalArrangement = Arrangement.Center,
                 horizontalAlignment = Alignment.CenterHorizontally
             ) {
-                RootNavigationGraph(rememberNavController())
+                RootNavigationGraph(navController = rememberNavController())
             }
         }
     }

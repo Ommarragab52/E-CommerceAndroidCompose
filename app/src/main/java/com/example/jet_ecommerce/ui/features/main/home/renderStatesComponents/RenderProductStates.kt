@@ -25,6 +25,7 @@ import com.example.jet_ecommerce.ui.components.CustomLoadingWidget
 import com.example.jet_ecommerce.ui.components.HomeProductsLazyRow
 import com.example.jet_ecommerce.ui.features.main.home.HomeViewModel
 import com.example.jet_ecommerce.ui.features.main.home.ProductContract
+import com.example.jet_ecommerce.ui.features.main.home.ShimmerEffectCard
 import com.example.jet_ecommerce.ui.features.main.wishlist.WishListViewModel
 
 @Composable
@@ -59,7 +60,7 @@ fun RenderProductStates(
         }
 
         is ProductContract.State.Loading -> {
-            CustomLoadingWidget()
+            ShimmerEffectCard()
         }
 
 
@@ -91,13 +92,5 @@ fun RenderProductStates(
             HomeProductsLazyRow(eloProducts)
 
         }
-    }/* when (viewModel.events.value) {
-         is HomeContract.Event.Idle -> {
-
-         }
-
-         is HomeContract.Event.NavigateToArticleDetails -> {
-
-         }
-     }*/
+    }
 }

@@ -23,8 +23,8 @@ class WishListDataSourceImpl @Inject constructor(
         return  safeAPiCall { webServices.getLoggedUserWishList(token) }
     }
 
-    override suspend fun removeProductFromWishlist(token : String,productId: String) {
-        webServices.removeProductFromWishList(token = token, productId)
+    override suspend fun removeProductFromWishlist(token : String,productId: String) :Flow<ResultWrapper<String?>>{
+       return safeAPiCall { webServices.removeProductFromWishList(token = token, productId) }
     }
 
 }

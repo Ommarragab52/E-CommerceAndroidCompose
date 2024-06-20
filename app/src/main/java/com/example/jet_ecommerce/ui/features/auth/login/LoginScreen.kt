@@ -46,6 +46,7 @@ import com.example.jet_ecommerce.ui.components.CustomTextButton
 import com.example.jet_ecommerce.ui.components.CustomTextField
 import com.example.jet_ecommerce.ui.features.auth.TokenViewModel
 import com.example.jet_ecommerce.ui.navigation_comp.screensNav.ECommerceScreens
+import com.example.jet_ecommerce.ui.navigation_comp.screensNav.Graph
 
 @Composable
 fun RenderViewState(navController: NavHostController, viewModel: LoginViewModel,tokenViewModel: TokenViewModel = hiltViewModel()) {
@@ -80,7 +81,7 @@ fun RenderViewState(navController: NavHostController, viewModel: LoginViewModel,
         }
 
         LoginContract.Event.NavigateToHome -> {
-            navController.navigate(ECommerceScreens.MainScreen.name)
+            navController.navigate(Graph.MAIN)
 
         }
     }

@@ -1,5 +1,6 @@
 package com.example.jet_ecommerce.ui.features.main.home.renderStatesComponents
 
+import CategoriesGridShimmerWidget
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.material.Text
 import androidx.compose.runtime.Composable
@@ -11,7 +12,6 @@ import androidx.compose.runtime.setValue
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
 import com.example.jet_ecommerce.ui.components.CustomAlertDialog
-import com.example.jet_ecommerce.ui.components.CustomLoadingWidget
 import com.example.jet_ecommerce.ui.components.HomeCategoriesGrid
 import com.example.jet_ecommerce.ui.features.main.home.HomeContract
 import com.example.jet_ecommerce.ui.features.main.home.HomeViewModel
@@ -31,7 +31,8 @@ fun RenderCategoriesStates(
     when (states) {
 
         is HomeContract.State.Loading -> {
-            CustomLoadingWidget()
+            val shimmerState = remember { mutableStateOf(true) }
+            CategoriesGridShimmerWidget()
         }
 
         is HomeContract.State.Error -> {

@@ -111,7 +111,7 @@ interface WebServices {
     suspend fun removeProductFromWishList(
         @Header("token") token : String,
         @Path("product_id") cartProductId : String
-    ):BaseResponse<Any>
+    ):BaseResponse<String>
 
     @Headers("Content-Type: application/json")
     @GET("api/v1/wishlist")

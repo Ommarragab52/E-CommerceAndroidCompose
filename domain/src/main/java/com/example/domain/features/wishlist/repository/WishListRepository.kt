@@ -10,5 +10,5 @@ interface WishListRepository {
     suspend fun addProductToWishList(token:String,addToCartRequest: AddToCartRequest) : WishListResponse
     suspend fun getLoggedUserWishList(token: String): Flow<ResultWrapper<List<Product>?>?>
 
-    suspend fun removeProductFromWishlist(token : String,productId: String) : Any
+    suspend fun removeProductFromWishlist(token : String,productId: String) : Flow<ResultWrapper<String?>?>
 }

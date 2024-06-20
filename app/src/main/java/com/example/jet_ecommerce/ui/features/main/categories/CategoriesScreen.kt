@@ -41,6 +41,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavHostController
+import androidx.navigation.NavOptions
 import coil.compose.AsyncImage
 import com.example.domain.features.category.model.Category
 import com.example.domain.features.subCategories.model.SubCategory
@@ -93,10 +94,10 @@ fun RenderViewState(
     when (events) {
         is CategoriesContract.Event.Idle -> {}
         is CategoriesContract.Event.NavigateToProductsList -> {
-            // navigate to product screen
             navController.navigate(
                 "${ECommerceScreens.ProductsScreen.name}/${(events as CategoriesContract.Event.NavigateToProductsList).categoryId}"
             )
+
         }
     }
 

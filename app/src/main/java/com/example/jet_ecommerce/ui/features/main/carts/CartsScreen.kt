@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -24,6 +25,7 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.MutableState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -54,17 +56,22 @@ import com.example.jet_ecommerce.ui.components.CustomLoadingWidget
 import com.example.jet_ecommerce.ui.components.cart_component.CartItem
 import com.example.jet_ecommerce.ui.components.toasts.InfoToast
 import com.example.jet_ecommerce.ui.features.auth.TokenViewModel
+import com.example.jet_ecommerce.ui.features.main.check_out.CheckOutViewModel
 import com.example.jet_ecommerce.ui.features.main.home.RenderCustomTopBar
-import com.stripe.android.PaymentConfiguration
-import com.stripe.android.payments.paymentlauncher.PaymentLauncher
-import com.stripe.android.paymentsheet.PaymentSheetContract
-import kotlinx.coroutines.delay
+import com.stripe.android.paymentsheet.PaymentSheet
+import com.stripe.android.paymentsheet.PaymentSheetResult
+import com.stripe.android.paymentsheet.rememberPaymentSheet
+import kotlinx.coroutines.Dispatchers
+
 import kotlinx.coroutines.launch
-import okhttp3.internal.wait
+
 
 @SuppressLint("SuspiciousIndentation")
 @Composable
-fun RenderCartStates(viewModel: CartViewModel = hiltViewModel()) {
+fun RenderCartStates(
+    viewModel: CartViewModel = hiltViewModel(),
+    checkOutViewModel: CheckOutViewModel = hiltViewModel()
+) {
     val states = produceState<CartContract.State>(initialValue = CartContract.State.Idle) {
         viewModel.states.collect {
             value = it
@@ -72,21 +79,20 @@ fun RenderCartStates(viewModel: CartViewModel = hiltViewModel()) {
     }.value
     val uriHandler = LocalUriHandler.current
 
-var sessionData : Session? = null
+    var sessionData: Session? = null
 
     when (states) {
-        is CartContract.State.Error -> {
-
-            InfoToast("No Items In Cart")
-
-        }
-
+        is CartContract.State.Error -> {}
         CartContract.State.Idle -> {}
         CartContract.State.Loading -> CustomLoadingWidget()
         is CartContract.State.Success -> {
             val products = states.data
             sessionData = states.checkOutData
-            ListOfCartProducts(products, sessionData = states.checkOutData)
+            ListOfCartProducts(
+                products,
+                sessionData = states.checkOutData,
+                checkOutViewModel = checkOutViewModel
+            )
         }
     }
 
@@ -98,7 +104,7 @@ var sessionData : Session? = null
         }.value
 
     when (events) {
-       is CartContract.Event.Idle -> {}
+        is CartContract.Event.Idle -> {}
         is CartContract.Event.ShowError -> {
             ErrorToast(message = "Something Went Wrong! Could Not Remove it.")
         }
@@ -109,170 +115,189 @@ var sessionData : Session? = null
         }
 
         is CartContract.Event.NavigateToStripe -> {
-          uriHandler.openUri(sessionData?.url ?:"")
+            uriHandler.openUri(sessionData?.url ?: "")
         }
     }
 }
 
+
 @Composable
-fun ListOfCartProducts(products : CartQuantity,
-                       viewModel: CartViewModel = hiltViewModel(),sessionData : Session) {
+fun ListOfCartProducts(
+    products: CartQuantity,
+    viewModel: CartViewModel = hiltViewModel(), sessionData: Session,
+    checkOutViewModel: CheckOutViewModel = hiltViewModel()
+) {
 
     var productCount by remember { mutableIntStateOf(1) }
     var productTotalPrice by remember { mutableIntStateOf(0) }
+    val scope = rememberCoroutineScope()
+    val paymentSheet = rememberPaymentSheet {
+        onPaymentSheetResult(it, viewModel = viewModel, products = products)
+    }
+    var customerConfig by remember {
+        mutableStateOf<PaymentSheet.CustomerConfiguration?>(
+            null
+        )
+    }
+    var paymentIntentClientSecret by remember { mutableStateOf<String?>(null) }
 
-    LazyColumn(modifier = Modifier
-        .fillMaxSize()
-        .padding(bottom = 65.dp), verticalArrangement = Arrangement.SpaceBetween) {
-        items(products.products?.size ?: 0, key = { index -> index }) { index->
-            productCount = products.products?.get(index)?.count ?:0
-            productTotalPrice = products.totalCartPrice ?:0
-            val productId = products.products?.get(index)?.product?.id ?: ""
-            CartItem(
-                imgUrl = products.products?.get(index)?.product?.imageCover ?: "",
-                productName = products.products?.get(index)?.product?.title ?: "",
-                productPrice = productTotalPrice,
-                quantityValue = productCount,
-                onDeleteClick = {
-                    viewModel.invokeAction(
-                        CartContract.Action.DeleteSpecificCartItem(
-                            productId = productId,
-                            product = products.products?.get(index)
+    Box(modifier = Modifier.fillMaxSize()) {
+        LazyColumn(
+            modifier = Modifier.fillMaxSize()
+        ) {
+            items(products.products?.size ?: 0, key = { index -> index }) { index ->
+                productCount = products.products?.get(index)?.count ?: 0
+                productTotalPrice = products.totalCartPrice ?: 0
+                val productId = products.products?.get(index)?.product?.id ?: ""
+                CartItem(
+                    imgUrl = products.products?.get(index)?.product?.imageCover ?: "",
+                    productName = products.products?.get(index)?.product?.title ?: "",
+                    productPrice = productTotalPrice,
+                    quantityValue = productCount,
+                    onDeleteClick = {
+                        viewModel.invokeAction(
+                            CartContract.Action.DeleteSpecificCartItem(
+                                productId = productId,
+                                product = products.products?.get(index)
+                            )
                         )
-                    )
-                },
-                onMinusClick = {
-                    if (productCount > 1)
-                        productCount--
+                    },
+                    onMinusClick = {
+                        if (productCount > 1)
+                            productCount--
+                        viewModel.invokeAction(
+                            CartContract.Action.UpdateCartProductQuantity(
+                                count = productCount,
+                                productId
+                            )
+                        )
+                        productTotalPrice = products.totalCartPrice ?: 0
+                    }) {
+                    productCount++
                     viewModel.invokeAction(
                         CartContract.Action.UpdateCartProductQuantity(
-                            count = productCount ,
+                            count = productCount,
                             productId
                         )
                     )
-                    productTotalPrice = products.totalCartPrice ?:0
-                }) {
-                productCount++
-                viewModel.invokeAction(
-                    CartContract.Action.UpdateCartProductQuantity(
-                        count = productCount,
-                        productId
-                    )
-                )
-                productTotalPrice = products.totalCartPrice ?:0
+                    productTotalPrice = products.totalCartPrice ?: 0
+                }
             }
         }
 
-        item {
-          if(products.products?.size!! >= 1){
-              Row(
-                  modifier = Modifier
-                      .fillMaxWidth()
-                      .padding(24.dp),
-                  horizontalArrangement = Arrangement.SpaceBetween,
-                  verticalAlignment = Alignment.CenterVertically
-              ) {
-                  Column(
-                      verticalArrangement = Arrangement.SpaceBetween,
-                      horizontalAlignment = Alignment.CenterHorizontally
-                  ) {
-                      Text(
-                          text = "Total price",
-                          style = TextStyle(
-                              fontSize = 18.sp,
-                              lineHeight = 18.sp,
-                              fontWeight = FontWeight(500),
-                              color = Color(0x9906004F),
-                              textAlign = TextAlign.Center,
-                          )
-                      )
+        if ((products.products?.size ?: 0) >= 1) {
+            Row(
+                modifier = Modifier
+                    .align(Alignment.BottomCenter)
+                    .fillMaxWidth()
+                    .padding(24.dp).padding(bottom = 60.dp),
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Column(
+                    verticalArrangement = Arrangement.SpaceBetween,
+                    horizontalAlignment = Alignment.CenterHorizontally
+                ) {
+                    Text(
+                        text = "Total price",
+                        style = TextStyle(
+                            fontSize = 18.sp,
+                            lineHeight = 18.sp,
+                            fontWeight = FontWeight(500),
+                            color = Color(0x9906004F),
+                            textAlign = TextAlign.Center,
+                        )
+                    )
 
-                      Text(
-                          text = "$productTotalPrice EGP",
-                          style = TextStyle(
-                              fontSize = 18.sp,
-                              lineHeight = 18.sp,
-                              fontWeight = FontWeight(500),
-                              color = Color(0xFF06004F),
-                              textAlign = TextAlign.Center,
-                          )
-                      )
-                  }
-                  Spacer(modifier = Modifier.width(16.dp))
-                  Box(modifier = Modifier
-                      .width(270.dp)
-                      .height(48.dp)
-                      .clickable {
-                          viewModel.invokeAction(
-                              CartContract.Action.CreateCastOrder(
-                                  products.id ?: "",
-                                  ShoppingAddingRequest(
-                                      details = "details",
-                                      phone = "01271561961",
-                                      city = "Cairo"
-                                  )
-                              )
-                          )
+                    Text(
+                        text = "$productTotalPrice EGP",
+                        style = TextStyle(
+                            fontSize = 18.sp,
+                            lineHeight = 18.sp,
+                            fontWeight = FontWeight(500),
+                            color = Color(0xFF06004F),
+                            textAlign = TextAlign.Center,
+                        )
+                    )
+                }
+                Spacer(modifier = Modifier.width(16.dp))
+                Box(modifier = Modifier
+                    .width(270.dp)
+                    .height(48.dp)
+                    .clickable {
+                        viewModel.invokeAction(
+                            CartContract.Action.CreateCastOrder(
+                                products.id ?: "",
+                                ShoppingAddingRequest(
+                                    details = "details",
+                                    phone = "01271561961",
+                                    city = "Cairo"
+                                )
+                            )
+                        )
 
-                          viewModel.invokeAction(CartContract.Action.CheckOut(products.id ?: ""))
+                        viewModel.invokeAction(
+                            CartContract.Action.CheckOut(
+                                products.id ?: ""
+                            )
+                        )
 
-                      }) {
-                      IconButton(modifier = Modifier
-                          .fillMaxSize()
-                          .background(
-                              color = Color(0xFF004182),
-                              shape = RoundedCornerShape(size = 20.dp)
-                          )
-                          .padding(start = 32.dp, top = 12.dp, end = 79.dp, bottom = 12.dp),
-                          onClick = {
+                    }) {
+                    IconButton(modifier = Modifier
+                        .fillMaxSize()
+                        .background(
+                            color = Color(0xFF004182),
+                            shape = RoundedCornerShape(size = 20.dp)
+                        )
+                        .padding(start = 32.dp, top = 12.dp, end = 79.dp, bottom = 12.dp),
+                        onClick = {
+                            scope.launch(Dispatchers.IO) {
+                                checkOutViewModel.makePayment { clientSecret, customerId, ephemeralKey ->
+                                    paymentIntentClientSecret = clientSecret
+                                    customerConfig = PaymentSheet.CustomerConfiguration(
+                                        customerId ?: "",
+                                        ephemeralKey ?: ""
+                                    )
+                                }
+                                presentPaymentSheet(
+                                    paymentSheet,
+                                    paymentIntentClientSecret!!,
+                                    customerConfig!!
+                                )
+                            }
 
-                              viewModel.invokeAction(
-                                  CartContract.Action.CreateCastOrder(
-                                      products.id ?: "",
-                                      ShoppingAddingRequest(
-                                          details = "details",
-                                          phone = "01271561961",
-                                          city = "Cairo"
-                                      )
-                                  )
-                              )
+                        }) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.SpaceEvenly,
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Text(
+                                text = "Check Out",
+                                style = TextStyle(
+                                    fontSize = 20.sp,
+                                    lineHeight = 18.sp,
+                                    fontWeight = FontWeight(500),
+                                    color = Color(0xFFFFFFFF),
+                                    textAlign = TextAlign.Center,
+                                )
+                            )
+                            Spacer(modifier = Modifier.width(18.dp))
+                            Icon(
+                                modifier = Modifier.height(40.dp),
+                                painter = painterResource(id = R.drawable.arrow),
+                                contentDescription = "cart icon",
+                                tint = Color.White,
+                            )
+                        }
 
-                              viewModel.invokeAction(CartContract.Action.CheckOut(products.id ?: ""))
-
-
-                          }) {
-                          Row(
-                              modifier = Modifier.fillMaxWidth(),
-                              horizontalArrangement = Arrangement.Center,
-                              verticalAlignment = Alignment.CenterVertically
-                          ) {
-                              Text(
-                                  text = "Check Out",
-                                  style = TextStyle(
-                                      fontSize = 20.sp,
-                                      lineHeight = 18.sp,
-                                      fontWeight = FontWeight(500),
-                                      color = Color(0xFFFFFFFF),
-                                      textAlign = TextAlign.Center,
-                                  )
-                              )
-                              Spacer(modifier = Modifier.width(18.dp))
-                              Icon(
-                                  painter = painterResource(id = com.google.android.material.R.drawable.material_ic_keyboard_arrow_right_black_24dp),
-                                  contentDescription = "cart icon",
-                                  tint = Color.White,
-                              )
-                          }
-
-                      }
-                  }
-              }
-          } else{
-              Box {}
-          }
+                    }
+                }
+            }
         }
     }
 }
+
 
 @Composable
 fun CartScreen(
@@ -280,6 +305,7 @@ fun CartScreen(
     viewModel: CartViewModel = hiltViewModel(),
     cartViewModel: CartViewModel = hiltViewModel(),
     tokenViewModel: TokenViewModel = hiltViewModel(),
+    checkOutViewModel: CartViewModel = hiltViewModel()
 ) {
     viewModel.invokeAction(CartContract.Action.GetUserProducts)
 
@@ -312,14 +338,55 @@ fun CartScreen(
                 navController.popBackStack()
             }
         }
-       RenderCartStates(viewModel)
+        RenderCartStates(viewModel)
 
 
     }
 
 
-
 }
 
+fun presentPaymentSheet(
+    paymentSheet: PaymentSheet,
+    paymentIntentClientSecret: String,
+    customerConfig: PaymentSheet.CustomerConfiguration
+) {
+    paymentSheet.presentWithPaymentIntent(
+        paymentIntentClientSecret,
+        PaymentSheet.Configuration(
+            merchantDisplayName = "crow",
+            customer = customerConfig
+        )
+    )
+}
 
+fun onPaymentSheetResult(
+    paymentSheetResult: PaymentSheetResult,
+    viewModel: CartViewModel,
+    products: CartQuantity
+) {
 
+    when (paymentSheetResult) {
+        is PaymentSheetResult.Canceled -> {
+            println("Canceled")
+        }
+
+        is PaymentSheetResult.Failed -> {
+            println("Error: ${paymentSheetResult.error}")
+        }
+
+        is PaymentSheetResult.Completed -> {
+            println("Completed")
+            viewModel.invokeAction(
+                CartContract.Action.CreateCastOrder(
+                    products.id ?: "",
+                    ShoppingAddingRequest(
+                        details = "details",
+                        phone = "01271561961",
+                        city = "Cairo"
+                    )
+                )
+            )
+        }
+    }
+}

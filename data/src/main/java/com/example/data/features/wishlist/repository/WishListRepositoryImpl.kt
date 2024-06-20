@@ -12,11 +12,11 @@ import javax.inject.Inject
 
 class WishListRepositoryImpl @Inject constructor(
     private val wishListDataSource: WishListDataSource
-): WishListRepository {
+) : WishListRepository {
     override suspend fun addProductToWishList(
         token: String,
         addToCartRequest: AddToCartRequest
-    ) : WishListResponse {
+    ): WishListResponse {
         return wishListDataSource.addProductToWishList(token, addToCartRequest)
     }
 
@@ -24,8 +24,11 @@ class WishListRepositoryImpl @Inject constructor(
         return wishListDataSource.getLoggedUserWishList(token)
     }
 
-    override suspend fun removeProductFromWishlist(token: String, productId: String) {
-        wishListDataSource.removeProductFromWishlist(token,productId)
+    override suspend fun removeProductFromWishlist(
+        token: String,
+        productId: String
+    ): Flow<ResultWrapper<String?>> {
+       return wishListDataSource.removeProductFromWishlist(token, productId)
     }
 
 

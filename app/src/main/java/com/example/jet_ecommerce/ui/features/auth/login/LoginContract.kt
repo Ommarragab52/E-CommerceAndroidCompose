@@ -11,14 +11,14 @@ class LoginContract {
         fun invokeAction(action: Action)
     }
 
-    sealed interface State{
+    sealed interface State{ // model le result
        data object Idle: State
         data object Loading: State
        data class Success(val data: LoginResponse): State
         data class Error(val message:String): State
         }
 
-    sealed interface Event{
+    sealed interface Event{ // intent
         data object Idle: Event
         data object NavigateToHome : Event
 

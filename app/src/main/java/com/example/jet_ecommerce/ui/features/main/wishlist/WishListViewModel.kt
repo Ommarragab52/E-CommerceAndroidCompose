@@ -21,6 +21,7 @@ import com.example.jet_ecommerce.ui.features.main.carts.CartContract
 import com.example.jet_ecommerce.ui.features.main.products.ProductsContract
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
@@ -39,13 +40,13 @@ class WishListViewModel @Inject constructor(
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher
 ) : ViewModel(),
     WishListContract.ViewModel {
-    private lateinit var token : String
+    private lateinit var token: String
     private val _states: MutableStateFlow<WishListContract.State> =
         MutableStateFlow(WishListContract.State.Idle)
     override val states: StateFlow<WishListContract.State>
         get() = _states
 
-    private val _events : MutableStateFlow<WishListContract.Event> =
+    private val _events: MutableStateFlow<WishListContract.Event> =
         MutableStateFlow(WishListContract.Event.Idle)
     override val events: StateFlow<WishListContract.Event>
         get() = _events
@@ -53,66 +54,101 @@ class WishListViewModel @Inject constructor(
     private val eventChannel = Channel<WishListContract.Event>(Channel.BUFFERED)
     val eventsFlow = eventChannel.receiveAsFlow()//single live event
 
-      val productId = savedStateHandle.get<String>("product_id")
+    val productId = savedStateHandle.get<String>("product_id")
+
     init {
         viewModelScope.launch {
             tokenManager.getToken().collect { token = it!! }
         }
     }
+
     override fun invokeAction(action: WishListContract.Action) {
-        when(action){
+        when (action) {
             is WishListContract.Action.AddProductToWishLIst -> addProductToWishList(action.addToCartRequest)
             is WishListContract.Action.GetWishListProducts -> getWishListProducts()
             is WishListContract.Action.RemoveProductFomWishList -> removeProductFromWishList(action.productId)
         }
     }
 
-    private fun addProductToWishList(addToCartRequest : AddToCartRequest) {
-      viewModelScope.launch(ioDispatcher) {
-          try {
-              addProductToWishListUseCase.invoke(token,addToCartRequest)
-          }catch (e: Exception)
-          {
-              if(e is IllegalStateException)
-                  throw java.lang.IllegalStateException()
-          }
-      }
-    }
-
-    private fun getWishListProducts() {
-          viewModelScope.launch(ioDispatcher) {
-              getLoggedUserWishListUseCase.invoke(token).collect{
-                  when(it){
-                      is ResultWrapper.Error -> {
-                          _states.emit(WishListContract.State.Error(it.error.message.toString()))
-                      }
-                      is ResultWrapper.Loading -> {
-                          _states.emit(
-                              WishListContract.State.Loading
-                          )
-                      }
-                      is ResultWrapper.ServerError -> {
-                          _states.emit(
-                              WishListContract.State.Error(it.error.message.toString())
-                          )
-                      }
-                      is ResultWrapper.Success ->{
-                          _states.emit(WishListContract.State.Success(productData = it.data ?: emptyList(),data = WishListResponse() ))
-
-                      }
-                      null -> {
-
-                      }
-                  }
-              }
-          }
-    }
-
-    private fun removeProductFromWishList(productId : String) {
+    private fun addProductToWishList(addToCartRequest: AddToCartRequest) {
         viewModelScope.launch(ioDispatcher) {
-            removeProductFromWishList.invoke(token, productId = productId)
+            try {
+                addProductToWishListUseCase.invoke(token, addToCartRequest)
+            } catch (e: Exception) {
+                if (e is IllegalStateException)
+                    throw java.lang.IllegalStateException()
+            }
         }
     }
 
+    private fun getWishListProducts() {
+        viewModelScope.launch(ioDispatcher) {
+            getLoggedUserWishListUseCase.invoke(token).collect {
+                when (it) {
+                    is ResultWrapper.Error -> {
+                        _states.emit(WishListContract.State.Error(it.error.message.toString()))
+                    }
 
+                    is ResultWrapper.Loading -> {
+                        _states.emit(
+                            WishListContract.State.Loading
+                        )
+                    }
+
+                    is ResultWrapper.ServerError -> {
+                        _states.emit(
+                            WishListContract.State.Error(it.error.message.toString())
+                        )
+                    }
+
+                    is ResultWrapper.Success -> {
+                        _states.emit(
+                            WishListContract.State.Success(
+                                productData = it.data ?: emptyList(), data = WishListResponse()
+                            )
+                        )
+
+                    }
+
+                    null -> {
+
+                    }
+                }
+            }
+        }
+    }
+
+    private fun removeProductFromWishList(productId: String) {
+        viewModelScope.launch(ioDispatcher) {
+            removeProductFromWishList.invoke(token, productId = productId).collect {
+                when (it) {
+                    is ResultWrapper.Error -> {
+                    }
+
+                    is ResultWrapper.Loading -> {
+                        _states.emit(
+                            WishListContract.State.Loading
+                        )
+                    }
+
+                    is ResultWrapper.ServerError -> {
+
+                    }
+
+                    is ResultWrapper.Success -> {
+                        _states.emit(
+                            WishListContract.State.Success(
+                                productData = listOf(), data = WishListResponse()
+                            )
+                        )
+                    }
+
+                    null -> {
+
+                    }
+                }
+            }
+        }
+    }
 }
+

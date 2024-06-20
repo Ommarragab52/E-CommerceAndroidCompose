@@ -4,6 +4,8 @@ import android.content.Context
 import android.content.SharedPreferences
 import android.util.Log
 import com.example.domain.features.wishlist.repository.WishListRepository
+import com.example.engaz.features.wallet.data.repo.PaymentRepository
+import com.google.gson.GsonBuilder
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -18,6 +20,7 @@ import okhttp3.OkHttpClient
 import okhttp3.logging.HttpLoggingInterceptor
 import retrofit2.Retrofit
 import retrofit2.converter.gson.GsonConverterFactory
+import java.util.concurrent.TimeUnit
 import javax.inject.Qualifier
 import javax.inject.Singleton
 
@@ -46,6 +49,27 @@ object ApiModule {
             .addInterceptor(authInterceptor)
             .authenticator(authAuthenticator)
             .build()
+    }
+    const val BASE_URL_STRIPE = "https://api.stripe.com/"
+    @Provides
+    @Singleton
+    fun provideStripeApi(loggingInterceptor: HttpLoggingInterceptor,) : StripeApiService {
+        val okHttpClient: OkHttpClient = OkHttpClient.Builder()
+            .readTimeout(60, TimeUnit.SECONDS)
+            .addInterceptor(loggingInterceptor)
+            .connectTimeout(60, TimeUnit.SECONDS)
+            .build()
+
+        val gson = GsonBuilder()
+            .setLenient()
+            .create()
+
+        return Retrofit.Builder()
+            .baseUrl(BASE_URL_STRIPE)
+            .addConverterFactory(GsonConverterFactory.create(gson))
+            .client(okHttpClient)
+            .build()
+            .create(StripeApiService::class.java)
     }
 
     @Provides
@@ -97,5 +121,10 @@ object ApiModule {
         return AuthInterceptor(tokenManager)
     }
 
+    @Provides
+    @Singleton
+    fun providePaymentRepository(stripeApiService: StripeApiService) : PaymentRepository {
+        return  PaymentRepository(stripeApiService)
+    }
 
 }

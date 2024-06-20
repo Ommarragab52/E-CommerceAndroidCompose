@@ -4,6 +4,7 @@ import android.util.Log
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxHeight
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
@@ -24,12 +25,13 @@ import com.example.data.api.AppSharedReferences
 import com.example.domain.features.cart.model.addToCart.AddToCartRequest
 import com.example.domain.features.products.model.Product
 import com.example.jet_ecommerce.ui.components.CustomAlertDialog
-import com.example.jet_ecommerce.ui.components.CustomLoadingWidget
+import com.example.jet_ecommerce.ui.features.main.home.ShimmerGrid
 import com.example.jet_ecommerce.ui.components.ProductItem
 import com.example.jet_ecommerce.ui.features.auth.TokenViewModel
 import com.example.jet_ecommerce.ui.features.main.carts.CartContract
 import com.example.jet_ecommerce.ui.features.main.carts.CartViewModel
 import com.example.jet_ecommerce.ui.features.main.home.RenderCustomTopBar
+
 import com.example.jet_ecommerce.ui.features.main.wishlist.WishListContract
 import com.example.jet_ecommerce.ui.features.main.wishlist.WishListViewModel
 import com.example.jet_ecommerce.ui.navigation_comp.screensNav.ECommerceScreens
@@ -57,7 +59,7 @@ fun RenderViewState(
         }
 
         is ProductsContract.States.Loading -> {
-            CustomLoadingWidget()
+            ShimmerGrid()
         }
 
         is ProductsContract.States.Success -> {
@@ -106,7 +108,7 @@ fun ProductsContent(
     productsViewModel: ProductsViewModel
 ) {
 
-    Column(verticalArrangement = Arrangement.SpaceBetween) {
+    Column(modifier = Modifier.fillMaxSize(),verticalArrangement = Arrangement.Center) {
         RenderCustomTopBar( //showing another loading
             cartViewModel = cartViewModel,
             tokenViewModel = tokenViewModel,
@@ -156,7 +158,7 @@ fun ProductsVerticalGrid(
 
             when {
                 loadState.refresh is LoadState.Loading -> {
-                    item { CustomLoadingWidget() }
+                    item { ShimmerGrid() }
                 }
 
                 loadState.refresh is LoadState.Error -> {
@@ -175,9 +177,6 @@ fun ProductsVerticalGrid(
 
                 }
 
-                loadState.append is LoadState.Loading -> {
-                    item { CustomLoadingWidget() }
-                }
 
                 loadState.append is LoadState.Error -> {
                     val error = productsLazyPagingItems.loadState.append as LoadState.Error

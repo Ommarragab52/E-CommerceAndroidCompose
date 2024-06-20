@@ -68,7 +68,6 @@ fun SearchField(
             )
         },
         colors = TextFieldDefaults.outlinedTextFieldColors(
-            textColor = colorResource(id = R.color.main_color),
             disabledTextColor = colorResource(id = R.color.main_color),
             cursorColor = colorResource(id = R.color.main_color),
             focusedBorderColor = colorResource(id = R.color.text_color),

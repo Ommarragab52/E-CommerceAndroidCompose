@@ -1,5 +1,6 @@
 package com.example.jet_ecommerce.ui.features.main.home
 
+import PageView
 import android.util.Log
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Spacer
@@ -20,7 +21,6 @@ import androidx.navigation.NavHostController
 import com.example.jet_ecommerce.ui.components.CustomAlertDialog
 import com.example.jet_ecommerce.ui.components.CustomLoadingWidget
 import com.example.jet_ecommerce.ui.components.CustomTopBar
-import com.example.jet_ecommerce.ui.components.PageView
 import com.example.jet_ecommerce.ui.features.auth.TokenViewModel
 import com.example.jet_ecommerce.ui.features.main.carts.CartContract
 import com.example.jet_ecommerce.ui.features.main.carts.CartViewModel
@@ -112,7 +112,7 @@ fun RenderCustomTopBar(
         }
 
         CartContract.State.Idle -> {}
-        CartContract.State.Loading -> CustomLoadingWidget()
+        CartContract.State.Loading -> ShimmerEffectSearchBar()
         is CartContract.State.Success -> {
             CustomTopBar(detailsTopBar = detailsTopBar,
                 nonDetailsTopBarTitle = nonDetailsTopBarTitle,

@@ -65,6 +65,9 @@ class LoginViewModel @Inject constructor(
         showDialog.value = true
         login(loginRequest)
     }
+
+
+
     private fun login(loginRequest: LoginRequest){
         _states.value = LoginContract.State.Loading
 

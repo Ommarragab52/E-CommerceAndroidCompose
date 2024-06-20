@@ -23,6 +23,8 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.MutableState
+import androidx.compose.runtime.mutableStateOf
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -49,6 +51,7 @@ fun WishListItem(
     productPrice: Int,
     onRemoveFromWishLis: () -> Unit,
     isNewToWishList : Boolean = true,
+    isAddedToCar:MutableState<Boolean> = mutableStateOf(false),
     onAddToCartClick: () -> Unit,
 ) {
     Card(
@@ -120,7 +123,7 @@ fun WishListItem(
                             onAddToCartClick()
                     }) {
                                 Text(modifier = Modifier.fillMaxWidth(),
-                                    text = "Add To Cart",
+                                    text = if(isAddedToCar.value)"Added" else "Add To Cart",
                                     style = TextStyle(
                                         fontSize = 16.sp,
                                         fontWeight = FontWeight(500),

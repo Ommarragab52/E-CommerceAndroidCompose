@@ -56,6 +56,7 @@ import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.lifecycle.SavedStateHandle
 import androidx.navigation.NavHostController
+import androidx.navigation.compose.rememberNavController
 import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.domain.features.products.model.Product
@@ -74,7 +75,7 @@ import kotlinx.coroutines.delay
 
 
 @Composable
-fun ProductDetailsScreen(vm: ProductDetailsViewModel, navController: NavHostController) {
+fun ProductDetailsScreen(vm: ProductDetailsViewModel, navController: NavHostController= rememberNavController()) {
     RenderViewState(vm, navController)
 }
 
@@ -166,7 +167,7 @@ fun ProductDetailsContent(
             tokenViewModel = tokenViewModel,
             navController = navController,
             detailsTopBar = false,
-            isMainScreen = false, onBackClick = { navController.popBackStack() },
+            isMainScreen = false, onBackClick = { navController.navigateUp() },
             onCartClick = { vm.invokeAction(ProductDetailsContract.Action.ClickOnCartIcon) }
         )
 

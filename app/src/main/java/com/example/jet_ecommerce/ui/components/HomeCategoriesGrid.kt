@@ -10,6 +10,10 @@ import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridCells
 import androidx.compose.foundation.lazy.staggeredgrid.StaggeredGridItemSpan
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.TileMode
 import androidx.compose.ui.unit.dp
 import com.example.domain.features.category.model.Category
 
@@ -19,6 +23,7 @@ fun HomeCategoriesGrid(categories: List<Category?>?, span: ((Int) -> StaggeredGr
     newList?.removeAt(0)
 
     CustomTitle(title = "Categories")
+
     LazyHorizontalStaggeredGrid(
         rows = StaggeredGridCells.Adaptive(128.dp),
         horizontalItemSpacing = 16.dp,
@@ -26,12 +31,13 @@ fun HomeCategoriesGrid(categories: List<Category?>?, span: ((Int) -> StaggeredGr
         verticalArrangement = Arrangement.SpaceEvenly,
         modifier = Modifier
             .fillMaxWidth()
-            .height(380.dp),
+            .height(380.dp)
+        ,
         content = {
             items(count = newList?.size ?: 0, span = span) { index ->
                 CategoryWidget(
                     imageUrl = newList?.get(index)?.image ?: "",
-                    categoryTitle = newList?.get(index)?.name ?: ""
+                    categoryTitle = newList?.get(index)?.name ?: "",
                 )
 
 
