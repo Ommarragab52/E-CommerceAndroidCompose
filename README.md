@@ -18,7 +18,7 @@ This Android application is a full-featured e-commerce platform that allows user
 - **Networking:** Retrofit for RESTful API integration
 - **Data Binding:** For efficient UI updates
 - **Image Loading:** Coil library
-- **Dependency Injection:** Dagger Hilt (you can add this if you used it in the project)
+- **Dependency Injection:** Dagger Hilt 
 
 ## Architecture
 This project follows Clean Architecture principles, separating the app into distinct layers:
